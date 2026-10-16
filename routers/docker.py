@@ -29,3 +29,8 @@ async def get_all_images():
 @router.get("/volumes")
 async def get_all_volumes():
     return await docker_service.get_all_volumes()
+
+
+@router.get("/networks")
+async def get_all_networks():
+    return await docker_service.get_all_networks()

@@ -169,3 +169,28 @@ async def get_all_volumes():
             status_code=503,
             detail="Cannot connect to Docker Engine. Check Docker socket access.",
         ) from exc
+
+
+async def get_all_networks():
+    try:
+        networks = client.networks.list()
+
+        return {
+            "total_networks": len(networks),
+            "networks": [
+                {
+                    "name": i.name,
+                    "id": i.short_id,
+                    "driver": i.attrs.get("Driver"),
+                    "scope": i.attrs.get("Scope"),
+                    "created": i.attrs.get("Created"),
+                }
+                for i in networks
+            ],
+        }
+
+    except docker.errors.DockerException as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Cannot connect to Docker Engine. Check Docker socket access.",
+        ) from exc

@@ -20,12 +20,18 @@ const PAGE_DETAILS = {
     subtitle: "Review your persistent Docker storage.",
     icon: "database",
   },
+  networks: {
+    title: "Networks",
+    subtitle: "Inspect networks configured in your Docker Engine.",
+    icon: "network",
+  },
 };
 const NAVIGATION = [
   { page: "dashboard", label: "Dashboard", href: "index.html", icon: "grid" },
   { page: "containers", label: "Containers", href: "containers.html", icon: "box" },
   { page: "images", label: "Images", href: "images.html", icon: "layers" },
   { page: "volumes", label: "Volumes", href: "volumes.html", icon: "database" },
+  { page: "networks", label: "Networks", href: "networks.html", icon: "network" },
 ];
 
 function icon(name, classes = "h-5 w-5") {
@@ -34,6 +40,7 @@ function icon(name, classes = "h-5 w-5") {
     box: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 21v-8.8"/>',
     layers: '<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/>',
     database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+    network: '<circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="m10.5 7.6-4 8M13.5 7.6l4 8M8 19h8"/>',
     search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
     refresh: '<path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2"/>',
     menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
@@ -217,6 +224,7 @@ function renderDashboard(data) {
       ${metricCard({ label: "Stopped", value: count(data.containers.stopped_containers), icon: "stop", tint: "bg-slate-100 text-slate-600", href: "containers.html?status=stopped", note: "Not currently running" })}
       ${metricCard({ label: "Images", value: count(data.images.total_images), icon: "layers", tint: "bg-violet-50 text-violet-600", href: "images.html", note: "Available locally" })}
       ${metricCard({ label: "Volumes", value: count(data.volumes.total_volumes), icon: "database", tint: "bg-amber-50 text-amber-600", href: "volumes.html", note: "Persistent storage" })}
+      ${metricCard({ label: "Networks", value: count(data.networks.total_networks), icon: "network", tint: "bg-cyan-50 text-cyan-600", href: "networks.html", note: "Configured locally" })}
     </div>
     <div class="mt-7 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div class="flex items-center justify-between gap-4"><div><h2 class="font-semibold text-slate-900">Containers at a glance</h2><p class="mt-1 text-sm text-slate-500">Quick view of your most recently listed containers.</p></div><a href="containers.html" class="shrink-0 text-sm font-medium text-blue-600 hover:text-blue-700">View all <span aria-hidden="true">→</span></a></div>
       ${data.containers.containers.length ? `<div class="mt-5 divide-y divide-slate-100">${data.containers.containers.slice(0, 5).map((container) => `<div class="flex flex-wrap items-center justify-between gap-3 py-3"><div class="min-w-0"><p class="truncate text-sm font-medium text-slate-800">${escapeHtml(container.name)}</p><p class="mt-1 truncate font-mono text-xs text-slate-400">${escapeHtml(container.id)}</p></div>${statusBadge(container.status)}</div>`).join("")}</div>` : emptyState("No containers found", "Containers will appear here when available.")}</div>`;
@@ -261,6 +269,12 @@ function renderVolumes(volumes, query = "") {
   return `<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">${searchToolbar("Search volumes…")}<div class="overflow-x-auto"><table class="w-full min-w-[700px] text-left"><thead class="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-400"><tr><th class="px-5 py-3">Volume</th><th class="px-5 py-3">Driver</th><th class="px-5 py-3">Mount point</th><th class="px-5 py-3">Created</th></tr></thead><tbody class="divide-y divide-slate-100">${rows}</tbody></table>${filtered.length ? "" : emptyState(volumes.length ? "No matching volumes" : "No volumes found", volumes.length ? "Try another search term." : "Docker volumes will appear here when available.")}</div><div class="border-t border-slate-100 px-5 py-3 text-xs text-slate-400">Showing ${filtered.length} of ${volumes.length} volumes</div></div>`;
 }
 
+function renderNetworks(networks, query = "") {
+  const filtered = networks.filter((network) => [network.name, network.id, network.driver, network.scope].join(" ").toLowerCase().includes(query.toLowerCase()));
+  const rows = filtered.map((network) => `<tr class="hover:bg-slate-50/70"><td class="px-5 py-4"><p class="font-medium text-slate-800">${escapeHtml(network.name)}</p><p class="mt-1 font-mono text-xs text-slate-400">${escapeHtml(network.id)}</p></td><td class="px-5 py-4"><span class="rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">${escapeHtml(network.driver || "—")}</span></td><td class="px-5 py-4 text-sm text-slate-600">${escapeHtml(network.scope || "—")}</td><td class="whitespace-nowrap px-5 py-4 text-sm text-slate-500">${formatDate(network.created)}</td></tr>`).join("");
+  return `<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">${searchToolbar("Search networks…")}<div class="overflow-x-auto"><table class="w-full min-w-[700px] text-left"><thead class="bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-400"><tr><th class="px-5 py-3">Network</th><th class="px-5 py-3">Driver</th><th class="px-5 py-3">Scope</th><th class="px-5 py-3">Created</th></tr></thead><tbody class="divide-y divide-slate-100">${rows}</tbody></table>${filtered.length ? "" : emptyState(networks.length ? "No matching networks" : "No networks found", networks.length ? "Try another search term." : "Docker networks will appear here when available.")}</div><div class="border-t border-slate-100 px-5 py-3 text-xs text-slate-400">Showing ${filtered.length} of ${networks.length} networks</div></div>`;
+}
+
 async function loadPage(page) {
   const content = document.getElementById("page-content");
   const refresh = document.getElementById("refresh-page");
@@ -269,12 +283,13 @@ async function loadPage(page) {
   content.innerHTML = loadingState();
   try {
     if (page === "dashboard") {
-      const [containers, images, volumes] = await Promise.all([
+      const [containers, images, volumes, networks] = await Promise.all([
         apiRequest("/docker/containes"),
         apiRequest("/docker/images"),
         apiRequest("/docker/volumes"),
+        apiRequest("/docker/networks"),
       ]);
-      content.innerHTML = renderDashboard({ containers, images, volumes });
+      content.innerHTML = renderDashboard({ containers, images, volumes, networks });
     } else {
       const path = page === "containers" ? "/docker/containes" : `/docker/${page}`;
       const payload = await apiRequest(path);
@@ -290,6 +305,8 @@ async function loadPage(page) {
         });
       } else if (page === "images") {
         content.innerHTML = renderImages(resources);
+      } else if (page === "networks") {
+        content.innerHTML = renderNetworks(resources);
       } else {
         content.innerHTML = renderVolumes(resources);
       }
@@ -320,7 +337,9 @@ function bindFilters(resources, page) {
       ? () => renderContainers(resources, query, filter)
       : page === "images"
         ? () => renderImages(resources, query)
-        : () => renderVolumes(resources, query);
+        : page === "networks"
+          ? () => renderNetworks(resources, query)
+          : () => renderVolumes(resources, query);
     document.getElementById("page-content").innerHTML = render();
     bindFilters(resources, page);
     bindContainerActions(resources, page);
